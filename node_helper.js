@@ -6,7 +6,6 @@
  */
 
 var NodeHelper = require("node_helper");
-var http = require('http');
 
 module.exports = NodeHelper.create({
 
@@ -59,39 +58,23 @@ module.exports = NodeHelper.create({
 	 * get a URL request
 	 *
 	 */
-	getData: function() {
+	getData: async function() {
 		var self = this;
+		var responses = []
+		try {
+			for (var busStopCode of self.config.busStopCodes) {
+				var urlApi = "http://bustime.mta.info/api/siri/stop-monitoring.json?key=" +
+					self.config.apiKey + "&version=2&OperatorRef=MTA&MonitoringRef=" +
+					busStopCode;
 
-		var urlApi = "http://bustime.mta.info/api/siri/stop-monitoring.json?key=" + 
-			self.config.apiKey + "&version=2&OperatorRef=MTA&MonitoringRef=" + 
-			self.config.busStopCode;
-		
-		//var retry = true;
-
-		http.get(urlApi, function(res) {
-			var responseString = "";
-
-			if (res.statusCode === 401) {
-				self.sendSocketNotification("ERROR", this.status);
-				console.log(self.name, this.status);
-				//retry = false;
-			} else if (res.statusCode != 200) {
-				console.log(self.name, "Could not load data.");
-				//self.scheduleUpdate((self.loaded) ? -1 : self.config.retryDelay);
-			} 
-
-			res.on('data', function(data) {
-				responseString += data;
-			});
-			
-			res.on('end', function() {
-				self.sendSocketNotification("DATA", JSON.parse(responseString));
-			});
-
-		}).on('error', function(e) {
-			console.log("Communications error:", e.message);
-			//self.scheduleUpdate((self.loaded) ? -1 : self.config.retryDelay);
-		});
+				const response = await fetch(urlApi)
+				const schedule = await response.json()
+				responses.push(schedule)
+			}
+			self.sendSocketNotification("DATA", responses);
+		} catch {
+			self.sendSocketNotification("ERROR", this.status);
+			console.log(self.name, this.status);
+		}
 	}
-
 });

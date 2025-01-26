@@ -25,9 +25,9 @@ var config = {
 ## Configuration options
 
 | Option           | Description
-|----------------- |-----------
+|------------------|-----------
 | `apiKey`         | *Required* Your MTA Bus Time API key. If you don't have one, you can request one [here](http://spreadsheets.google.com/viewform?hl=en&formkey=dG9kcGIxRFpSS0NhQWM4UjA0V0VkNGc6MQ#gid=0).<br><br> **Type:** `string` <br> **Default value:** `none`
-| `busStopCode`    | *Required* The 6 digit bus stop code to monitor. You can get it from your bus stop or find it [here](http://bustime.mta.info/).<br><br> **Type:** `string` <br> **Default value:** `none`
+| `busStopCodes`   | *Required* The 6 digit bus stop code to monitor. You can get it from your bus stop or find it [here](http://bustime.mta.info/).<br><br> **Type:** `array[string]` <br> **Example value:** `['302278', '303845']` <br> **Default value:** `[]`
 | `timeFormat`     | *Optional* Use 12 or 24 hour format. <br><br> **Possible values:** `12` or `24` <br> **Default value:** uses value of _config.timeFormat_
 | `maxEntries`     | *Optional* The maximum number of buses to display. <br><br> **Possible values:** `1` to `10` <br> **Default value:** `5`
 | `updateInterval` | *Optional* How often to check for the next bus. <br><br> **Type:** `int`<br> **Default value:** `60000` milliseconds (1 minute)

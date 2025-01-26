@@ -12,7 +12,8 @@ Module.register("MMM-MTA-NextBus", {
 		timeFormat: config.timeFormat,
 		maxEntries: 5,
 		updateInterval: 60000,
-		retryDelay: 5000
+		retryDelay: 5000,
+		busStopCodes: [],
 	},
 
 	requiresVersion: "2.1.0", // Required version of MagicMirror
@@ -78,50 +79,53 @@ Module.register("MMM-MTA-NextBus", {
 		//this.sendSocketNotification("MMM-MTA-NextBus-NOTIFICATION_TEST", data);
 	},
 
-	processActionNextBus: function(response) {
-		
+	processActionNextBus: function(responses) {
 		var result = [];
-		
-		var serviceDelivery = response.Siri.ServiceDelivery;
-		var updateTimestampReference = new Date(serviceDelivery.ResponseTimestamp);
-		
-		//console.log(updateTimestampReference);
-		
-		// array of buses
-		var visits = serviceDelivery.StopMonitoringDelivery[0].MonitoredStopVisit;
-		var visitsCount = Math.min(visits.length, this.config.maxEntries);
-		
-		for (var i = 0; i < visitsCount; i++) {
+		let journeys = []
+		const updateTimestampReference = new Date()
+		for (var response of responses) {
+			var serviceDelivery = response.Siri.ServiceDelivery;
+
+			var monitoringDeliveries = serviceDelivery.StopMonitoringDelivery
+			for (var monitoringDelivery of monitoringDeliveries) {
+				var visits = monitoringDelivery?.MonitoredStopVisit ?? [];
+
+				for (var visit of visits) {
+					journeys.push(visit.MonitoredVehicleJourney)
+				}
+			}
+		}
+
+		journeys.sort((a, b) => {
+			return new Date(a.MonitoredCall.ExpectedArrivalTime) - new Date(b.MonitoredCall.ExpectedArrivalTime)
+		})
+
+		journeys = journeys.slice(0, Math.min(journeys.length, this.config.maxEntries))
+
+		for (var journey of journeys) {
 			r = '';
 
-			var journey = visits[i].MonitoredVehicleJourney;
-			var line = journey.PublishedLineName[0]; 
-			
+			var line = journey.PublishedLineName[0];
+
 			var destinationName = journey.DestinationName[0];
 			if (destinationName.startsWith('LIMITED')) {
 				line += ' LIMITED';
 			}
-			
+
 			r += line + ', ';
-			
+
 			var monitoredCall = journey.MonitoredCall;
-			// var expectedArrivalTime = new Date(monitoredCall.ExpectedArrivalTime);
-			if (monitoredCall.ExpectedArrivalTime) {
-				var mins = this.getArrivalEstimateForDateString(monitoredCall.ExpectedArrivalTime, updateTimestampReference);
-				r += mins + ', ';
-			}
-			
-			
+			var mins = this.getArrivalEstimateForDateString(monitoredCall.ExpectedArrivalTime, updateTimestampReference);
+			r += mins + ', ';
+
 			var distance = monitoredCall.ArrivalProximityText;
 			r += distance;
 
 			result.push(r);
 		}
 
-
-
 		result.push('Last Updated: ' + this.formatTimeString(updateTimestampReference));
-		
+
 		return result;
 	},
 
